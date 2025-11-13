@@ -1,11 +1,12 @@
 "use client";
 import * as React from "react";
+import { Suspense } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-export default function MembersPage() {
+function MembersInner() {
   const [list, setList] = React.useState<any[]>([]);
   const [name, setName] = React.useState("");
 
@@ -56,5 +57,13 @@ export default function MembersPage() {
         </TableBody>
       </Table>
     </div>
+  );
+}
+
+export default function MembersPage() {
+  return (
+    <Suspense fallback={<div className="min-h-[50vh]" /> }>
+      <MembersInner />
+    </Suspense>
   );
 }
