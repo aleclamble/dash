@@ -13,9 +13,13 @@ export async function GET() {
   const { supabaseAdmin } = await import("@/lib/supabase");
   const admin = supabaseAdmin();
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-  const cached = await admin.from("discord_guilds").select("guild_id id, name, icon, owner, permissions").eq("user_id", userId).gte("cached_at", oneHourAgo);
+  const cached = await admin
+    .from("discord_guilds")
+    .select("guild_id id, name, icon, owner, permissions, bot_installed")
+    .eq("user_id", userId)
+    .gte("cached_at", oneHourAgo);
   if (!cached.error && cached.data && cached.data.length) {
-    return NextResponse.json(cached.data);
+    return NextResponse.json(cached.data.map((g:any)=> ({...g, botInstalled: !!g.bot_installed})));
   }
 
   const conn = await getDiscordConnection(userId);
@@ -42,12 +46,6 @@ export async function GET() {
         refresh_token: tj.refresh_token || conn.refresh_token,
         access_expires_at: new Date(Date.now() + (tj.expires_in || 3600) * 1000).toISOString(),
       });
-      await upsertDiscordConnection(userId, {
-        discord_user_id: conn.discord_user_id,
-        access_token: token,
-        refresh_token: tj.refresh_token || conn.refresh_token,
-        access_expires_at: new Date(Date.now() + (tj.expires_in || 3600) * 1000).toISOString(),
-      });
     }
   }
 
@@ -64,5 +62,12 @@ export async function GET() {
     return Boolean(g.owner) || (perms & ADMIN) === ADMIN || (perms & MANAGE_GUILD) === MANAGE_GUILD;
   }).map((g: any) => ({ id: g.id, name: g.name, icon: g.icon, owner: g.owner, permissions: g.permissions }));
   await upsertGuilds(userId, manageable);
-  return NextResponse.json(manageable);
+  // merge bot_installed flags from cache
+  const installed = await admin
+    .from("discord_guilds")
+    .select("guild_id, bot_installed")
+    .eq("user_id", userId);
+  const installedSet = new Map((installed.data || []).map((r:any)=> [r.guild_id, !!r.bot_installed]));
+  const withFlags = manageable.map(g => ({...g, botInstalled: installedSet.get(g.id) || false}));
+  return NextResponse.json(withFlags);
 }

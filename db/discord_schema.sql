@@ -23,8 +23,14 @@ create table if not exists public.discord_guilds (
   owner boolean,
   permissions bigint,
   cached_at timestamptz default now(),
+  bot_installed boolean default false,
+  installed_at timestamptz,
   primary key (user_id, guild_id)
 );
+
+-- Backfill-safe alters (no-op if columns already exist)
+alter table public.discord_guilds add column if not exists bot_installed boolean default false;
+alter table public.discord_guilds add column if not exists installed_at timestamptz;
 
 alter table public.discord_guilds enable row level security;
 

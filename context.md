@@ -33,9 +33,27 @@ This document captures ongoing context, decisions, and work history for the Dash
 - Verify DISCORD_* env vars across environments (local/prod) and validate redirect URIs
 
 ## Next Focus: Guild Persistence
-- Ensure guilds list is persisted reliably with proper TTL and invalidation
-- Add endpoints to read cached guilds, force-refresh, and maybe diff/update logic
-- Potentially add background refresh on demand and reconcile permissions/ownership fields
+Status: In progress on branch `feature/guild-persistence`.
+
+Implemented:
+- Schema extended: `discord_guilds` now has `bot_installed` (boolean) and `installed_at` (timestamp). Added backfill-safe alters.
+- Store: `upsertGuilds` avoids overwriting `bot_installed`; new `markGuildInstalled(userId, guildId)` helper.
+- API: `/api/discord/guilds` now includes `botInstalled` in response and fixed duplicate upsert during token refresh.
+- Bot install flow:
+  - Start install: `GET /api/discord/bot/install?guildId=...` builds Discord bot OAuth2 URL (scopes `bot applications.commands`) and redirects to Discord.
+  - Callback: `GET /api/discord/bot/callback` marks the guild as installed for the current user.
+  - UI: Integrations page now links "Install bot" to the install route per guild.
+
+Remaining:
+- Add cached-only guilds endpoint (e.g., `GET /api/discord/guilds/cache`) and optional `POST /api/discord/guilds/refresh`.
+- Surface install state in the UI (badge) and wire a Manage action.
+- Set env vars for bot install redirect and permissions.
+
+Env vars:
+- `DISCORD_CLIENT_ID` (required)
+- `DISCORD_REDIRECT_URI` (user OAuth)
+- `DISCORD_BOT_REDIRECT_URI` (bot install callback), e.g., `http://localhost:3000/api/discord/bot/callback`
+- `DISCORD_BOT_PERMISSIONS` (integer bitmask), set to required permissions for your bot.
 
 ## Branch Strategy
 - New feature branch: `feature/guild-persistence` for work focused on guild persistence, cache policy, and related APIs/UI.

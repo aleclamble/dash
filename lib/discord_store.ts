@@ -22,6 +22,12 @@ export async function upsertDiscordConnection(userId: string, row: {
 
 export async function upsertGuilds(userId: string, guilds: Array<{ id: string; name: string; icon?: string | null; owner?: boolean; permissions?: number }>) {
   const admin = supabaseAdmin();
+  // Do not include bot_installed so we don't overwrite the flag during refresh
   const rows = guilds.map(g => ({ user_id: userId, guild_id: g.id, name: g.name, icon: g.icon ?? null, owner: !!g.owner, permissions: g.permissions ?? 0, cached_at: new Date().toISOString() }));
   if (rows.length) await admin.from("discord_guilds").upsert(rows);
+}
+
+export async function markGuildInstalled(userId: string, guildId: string) {
+  const admin = supabaseAdmin();
+  await admin.from("discord_guilds").upsert({ user_id: userId, guild_id: guildId, bot_installed: true, installed_at: new Date().toISOString(), cached_at: new Date().toISOString() });
 }

@@ -140,7 +140,7 @@ export default function DiscordIntegrationPage() {
                   {g.botInstalled ? (
                     <Button size="sm" variant="outline">Manage</Button>
                   ) : (
-                    <Button size="sm">Install bot</Button>
+                    <a href={`/api/discord/bot/install?guildId=${g.id}`}><Button size="sm">Install bot</Button></a>
                   )}
                 </div>
               </div>
