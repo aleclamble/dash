@@ -1,12 +1,13 @@
 "use client";
 import * as React from "react";
+import { Suspense } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+function LoginInner() {
   const router = useRouter();
   const sp = useSearchParams();
   const redirectTo = sp.get("redirect") || "/sales";
@@ -48,5 +49,13 @@ export default function LoginPage() {
         <Button type="submit" disabled={loading} className="w-full">{loading? "Signing in...": "Sign in"}</Button>
       </form>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black" /> }>
+      <LoginInner />
+    </Suspense>
   );
 }
