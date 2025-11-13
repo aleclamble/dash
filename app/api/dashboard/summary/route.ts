@@ -52,10 +52,11 @@ export async function GET(req: Request) {
   const memberMap = new Map<number, { member_id: number; member_name: string; total_amount: number }>();
   for (const r of memberRows.data || []) {
     const id = r.member_id as number;
-    const name = r.team_members?.name as string | undefined;
+    const tm: any = (r as any).team_members;
+    const name = Array.isArray(tm) ? (tm[0]?.name as string | undefined) : (tm?.name as string | undefined);
     if (!id) continue;
     const prev = memberMap.get(id) || { member_id: id, member_name: name || `Member ${id}`, total_amount: 0 };
-    prev.total_amount += Number(r.amount || 0);
+    prev.total_amount += Number((r as any).amount || 0);
     if (name) prev.member_name = name;
     memberMap.set(id, prev);
   }
@@ -73,9 +74,11 @@ export async function GET(req: Request) {
   const pipeMap = new Map<number | null, { pipeline_id: number | null; pipeline_name: string; total_amount: number }>();
   for (const r of pipeRows.data || []) {
     const id = (r.pipeline_id as number | null) ?? null;
-    const name = (r.pipelines as any)?.name ?? (id === null ? "Unassigned" : `Pipeline ${id}`);
+    const pip: any = (r as any).pipelines;
+    const pname = Array.isArray(pip) ? (pip[0]?.name as string | undefined) : (pip?.name as string | undefined);
+    const name = pname ?? (id === null ? "Unassigned" : `Pipeline ${id}`);
     const prev = pipeMap.get(id) || { pipeline_id: id, pipeline_name: name, total_amount: 0 };
-    prev.total_amount += Number(r.net_amount || 0);
+    prev.total_amount += Number((r as any).net_amount || 0);
     pipeMap.set(id, prev);
   }
   const pipelines = Array.from(pipeMap.values()).sort((a,b)=> a.pipeline_name.localeCompare(b.pipeline_name));
