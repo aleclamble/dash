@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import { Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Header } from "@/components/layout/Header";
@@ -35,11 +36,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!ready) return <div className="min-h-screen"/>;
 
   return (
-    <div className="min-h-screen">
-      <Header />
-      <div className="pt-14 p-6">
-        {children}
+    <Suspense fallback={<div className="min-h-screen" /> }>
+      <div className="min-h-screen">
+        <Header />
+        <div className="pt-14 p-6">
+          {children}
+        </div>
       </div>
-    </div>
+    </Suspense>
   );
 }
