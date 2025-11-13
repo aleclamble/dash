@@ -42,9 +42,10 @@ async function getSummary(from?: string | null, to?: string | null) {
   return json as { totals: any; members: any[]; pipelines: any[] };
 }
 
-export default async function SalesPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
-  const from = typeof searchParams?.from === "string" ? searchParams!.from : undefined;
-  const to = typeof searchParams?.to === "string" ? searchParams!.to : undefined;
+export default async function SalesPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const sp = await searchParams;
+  const from = typeof sp?.from === "string" ? sp.from : undefined;
+  const to = typeof sp?.to === "string" ? sp.to : undefined;
 
   const [sales, summary] = await Promise.all([
     getSales(from, to),
