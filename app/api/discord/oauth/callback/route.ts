@@ -14,8 +14,8 @@ export async function GET(req: Request) {
     const code = url.searchParams.get("code");
     const state = url.searchParams.get("state");
     const cookieJar = await cookies();
-    const expectedState = (await cookieJar).get("dc_state")?.value;
-    const verifier = (await cookieJar).get("dc_verifier")?.value;
+    const expectedState = cookieJar.get("dc_state")?.value;
+    const verifier = cookieJar.get("dc_verifier")?.value;
     if (!code || !state || !expectedState || state !== expectedState || !verifier) {
       return NextResponse.redirect("/settings/integrations/discord?error=invalid_state");
     }
@@ -76,8 +76,8 @@ export async function GET(req: Request) {
     }
 
     // Clean up PKCE cookies
-    await (await cookieJar).delete("dc_state");
-    await (await cookieJar).delete("dc_verifier");
+    await cookieJar.delete("dc_state");
+    await cookieJar.delete("dc_verifier");
 
     return NextResponse.redirect(`${await baseUrl()}/settings/integrations/discord?connected=1`);
   } catch (e: any) {
