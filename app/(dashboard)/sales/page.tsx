@@ -59,9 +59,9 @@ export default async function SalesPage({ searchParams }: { searchParams?: Recor
 
   return (
     <div className="max-w-6xl w-full mx-auto py-8 space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Sales</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <DateRangePicker />
           <SyncButton />
         </div>

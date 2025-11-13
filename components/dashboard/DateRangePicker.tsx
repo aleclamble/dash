@@ -74,7 +74,7 @@ export function DateRangePicker() {
 
   return (
     <div className="relative" data-range-root>
-      <Button variant="outline" onClick={() => setOpen(o=>!o)} aria-expanded={open} aria-haspopup className="min-w-[10ch]">
+      <Button variant="outline" onClick={() => setOpen(o=>!o)} aria-expanded={open} aria-haspopup className="min-w-[10ch] max-w-[70vw] sm:max-w-none truncate text-left justify-between">
         {label}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="ml-2 opacity-70"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
       </Button>
