@@ -6,7 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 export async function POST(req: Request) {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
   if (!stripeSecret) return NextResponse.json({ error: "Missing STRIPE_SECRET_KEY" }, { status: 400 });
-  const stripe = new Stripe(stripeSecret, { apiVersion: "2024-12-18.acacia" });
+  const stripe = new Stripe(stripeSecret, { apiVersion: "2024-06-20" });
   const admin = supabaseAdmin();
 
   const { since } = (await req.json().catch(() => ({}))) as { since?: number };

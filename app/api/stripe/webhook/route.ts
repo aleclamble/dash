@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing Stripe env" }, { status: 400 });
   }
 
-  const stripe = new Stripe(stripeSecret, { apiVersion: "2024-12-18.acacia" });
+  const stripe = new Stripe(stripeSecret, { apiVersion: "2024-06-20" });
 
   let event: Stripe.Event;
   try {
