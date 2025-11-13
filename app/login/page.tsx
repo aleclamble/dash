@@ -16,18 +16,44 @@ function LoginInner() {
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [mode, setMode] = React.useState<'signin' | 'signup'>('signin');
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      if (!data.session) throw new Error("No session returned");
-      router.push(redirectTo);
+      if (mode === 'signin') {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        if (!data.session) throw new Error("No session returned");
+        try {
+          await fetch('/api/auth/set-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ access_token: data.session.access_token, refresh_token: data.session.refresh_token, expires_at: data.session.expires_at }),
+          });
+        } catch {}
+        router.push(redirectTo);
+      } else {
+        // Sign up flow (requires email confirmations off to return a session immediately)
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        if (data.session) {
+          try {
+            await fetch('/api/auth/set-session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ access_token: data.session.access_token, refresh_token: data.session.refresh_token, expires_at: data.session.expires_at }),
+            });
+          } catch {}
+          router.push(redirectTo);
+        } else {
+          setError('Sign up successful. Please verify your email to continue, or disable email confirmations in Supabase Auth settings for instant access.');
+        }
+      }
     } catch (err: any) {
-      setError(err?.message || "Login failed");
+      setError(err?.message || (mode === 'signin' ? "Login failed" : "Sign up failed"));
     } finally {
       setLoading(false);
     }
@@ -36,7 +62,12 @@ function LoginInner() {
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
       <form onSubmit={onSubmit} className="w-full max-w-sm rounded-md border border-white/10 bg-zinc-900 p-6 space-y-4 shadow-xl">
-        <h1 className="text-xl font-semibold">Sign in</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold">{mode === 'signin' ? 'Sign in' : 'Sign up'}</h1>
+          <button type="button" className="text-sm text-foreground/80 hover:text-foreground underline underline-offset-2" onClick={()=> setMode(mode === 'signin' ? 'signup' : 'signin')}>
+            {mode === 'signin' ? 'Create account' : 'Have an account? Sign in'}
+          </button>
+        </div>
         {error && <div className="text-sm text-red-400">{error}</div>}
         <div>
           <Label htmlFor="email">Email</Label>
