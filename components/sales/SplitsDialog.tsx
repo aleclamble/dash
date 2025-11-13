@@ -13,6 +13,7 @@ type Props = {
 };
 
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export function SplitsDialog({ saleId }: Props) {
   const [open, setOpen] = React.useState(false);
@@ -27,6 +28,25 @@ export function SplitsDialog({ saleId }: Props) {
     fetch("/api/team/members").then(r=>r.json()).then(setMembers).catch(()=>{});
     fetch("/api/pipelines").then(r=>r.json()).then(setPipelines).catch(()=>{});
   }, []);
+
+  // Load existing splits + pipeline when opening
+  React.useEffect(() => {
+    if (!open) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from("sales_splits")
+        .select("member_id, percent, sale_id, sales(pipeline_id)")
+        .eq("sale_id", saleId);
+      if (!error && data) {
+        // prefill pipeline and rows if existing
+        const pid = (data[0] as any)?.sales?.pipeline_id as number | null | undefined;
+        if (typeof pid === 'number') setPipelineId(pid);
+        if (Array.isArray(data) && data.length > 0) {
+          setRows(data.map(d => ({ member_id: d.member_id ?? null, percent: d.percent ?? 0 })));
+        }
+      }
+    })();
+  }, [open, saleId]);
 
   const total = rows.reduce((a, r) => a + (Number(r.percent) || 0), 0);
 
@@ -66,7 +86,7 @@ export function SplitsDialog({ saleId }: Props) {
             <div className="mt-4 space-y-3">
               <div>
                 <Label>Pipeline</Label>
-                <Select onValueChange={(v)=>setPipelineId(Number(v))}>
+                <Select value={pipelineId !== null ? String(pipelineId) : undefined} onValueChange={(v)=>setPipelineId(Number(v))}>
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select a pipeline" />
                   </SelectTrigger>
