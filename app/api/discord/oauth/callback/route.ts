@@ -22,8 +22,8 @@ export async function GET(req: Request) {
 
     const clientId = process.env.DISCORD_CLIENT_ID!;
     const clientSecret = process.env.DISCORD_CLIENT_SECRET!;
-    const redirectUri = process.env.DISCORD_REDIRECT_URI!;
-    if (!clientId || !clientSecret || !redirectUri) {
+    const redirectUri = process.env.DISCORD_REDIRECT_URI || `${await baseUrl()}/api/discord/oauth/callback`;
+    if (!clientId || !clientSecret) {
       return NextResponse.redirect("/settings/integrations/discord?error=server_config");
     }
 
@@ -63,11 +63,22 @@ export async function GET(req: Request) {
     const me = await meRes.json();
     const discordUserId = me?.id as string | undefined;
 
-    // Persist in Supabase keyed by app user
+    // Persist in Supabase keyed by app user (requires existing app session)
     const { getAppUserId } = await import("@/lib/app_user");
     const { upsertDiscordConnection } = await import("@/lib/discord_store");
     const appUserId = await getAppUserId();
+
+    // Set Discord cookies for immediate UI access to /api/discord/me
+    const now = Math.floor(Date.now() / 1000);
+    const maxAge = Math.max(1, Math.min((expiresIn || 3600), 3600));
+    const exp = now + (expiresIn || 3600);
+    const secure = process.env.NODE_ENV === "production";
+    await cookieJar.set("dc_access", accessToken, { httpOnly: true, secure, sameSite: "lax", path: "/", maxAge });
+    if (refreshToken) await cookieJar.set("dc_refresh", refreshToken, { httpOnly: true, secure, sameSite: "lax", path: "/", maxAge: 60*60*24*30 });
+    await cookieJar.set("dc_expires", String(exp), { httpOnly: true, secure, sameSite: "lax", path: "/", maxAge: 60*60*24*30 });
+
     if (!appUserId) {
+      // App session missing: UI will still be able to call /api/discord/me via cookies, but persistence will be skipped
       return NextResponse.redirect(`${await baseUrl()}/settings/integrations/discord?error=not_signed_in`);
     }
     if (discordUserId) {
