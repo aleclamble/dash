@@ -21,12 +21,9 @@ export default function DiscordIntegrationPage() {
 
     // Avoid double-fetch on Fast Refresh/hot reload
     const fetchedKey = "dc_guilds_fetched_once";
-    if (sessionStorage.getItem(fetchedKey)) {
-      const cached = sessionStorage.getItem("dc_guilds_cache");
-      if (cached) {
-        try { setGuilds(JSON.parse(cached)); } catch {}
-      }
-      return;
+    const cached = sessionStorage.getItem("dc_guilds_cache");
+    if (cached) {
+      try { setGuilds(JSON.parse(cached)); } catch {}
     }
 
     let cancelled = false;
@@ -63,7 +60,32 @@ export default function DiscordIntegrationPage() {
         if (!cancelled) setLoading(false);
       }
     };
-    load();
+
+    // Attempt to attach a pending Discord connection after login
+    const attachPending = async () => {
+      try {
+        const url = new URL(window.location.href);
+        if (url.searchParams.get("pending") === "1") {
+          await fetch("/api/discord/attach", { method: "POST" });
+          url.searchParams.delete("pending");
+          window.history.replaceState({}, "", url.toString());
+        }
+      } catch {}
+    };
+
+    // If returning from bot install, refresh guilds to reflect install state
+    const maybeRefreshFromInstall = async () => {
+      try {
+        const url = new URL(window.location.href);
+        if (url.searchParams.get("installed") === "1") {
+          url.searchParams.delete("installed");
+          window.history.replaceState({}, "", url.toString());
+          await load();
+        }
+      } catch {}
+    };
+
+    attachPending().then(() => maybeRefreshFromInstall().then(load));
     return () => { cancelled = true; };
   }, []);
 
@@ -132,15 +154,20 @@ export default function DiscordIntegrationPage() {
           <div className="divide-y">
             {guilds.map((g) => (
               <div key={g.id} className="py-3 flex items-center justify-between">
-                <div>
+                <div className="flex items-center gap-2">
                   <div className="font-medium">{g.name}</div>
+                  {g.botInstalled && (
+                    <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs border border-emerald-300/60 text-emerald-700 bg-emerald-50">Installed</span>
+                  )}
                   <div className="text-xs text-muted-foreground">{g.permissions || ""}</div>
                 </div>
                 <div className="flex gap-2">
                   {g.botInstalled ? (
-                    <Button size="sm" variant="outline">Manage</Button>
+                    <>
+                      <Button size="sm" variant="outline">Manage</Button>
+                    </>
                   ) : (
-                    <Button size="sm">Install bot</Button>
+                    <a href={`/api/discord/bot/install?guildId=${g.id}`}><Button size="sm">Install bot</Button></a>
                   )}
                 </div>
               </div>

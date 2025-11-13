@@ -12,9 +12,9 @@ async function baseUrl() {
 export async function GET() {
   try {
     const clientId = process.env.DISCORD_CLIENT_ID!;
-    const redirectUri = process.env.DISCORD_REDIRECT_URI!;
-    if (!clientId || !redirectUri) {
-      return NextResponse.json({ error: "Missing Discord env vars" }, { status: 500 });
+    const redirectUri = process.env.DISCORD_REDIRECT_URI || `${await baseUrl()}/api/discord/oauth/callback`;
+    if (!clientId) {
+      return NextResponse.json({ error: "Missing DISCORD_CLIENT_ID" }, { status: 500 });
     }
     const scope = "identify guilds";
     const state = Math.random().toString(36).slice(2);

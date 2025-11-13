@@ -14,16 +14,16 @@ export async function GET(req: Request) {
     const code = url.searchParams.get("code");
     const state = url.searchParams.get("state");
     const cookieJar = await cookies();
-    const expectedState = (await cookieJar).get("dc_state")?.value;
-    const verifier = (await cookieJar).get("dc_verifier")?.value;
+    const expectedState = cookieJar.get("dc_state")?.value;
+    const verifier = cookieJar.get("dc_verifier")?.value;
     if (!code || !state || !expectedState || state !== expectedState || !verifier) {
       return NextResponse.redirect("/settings/integrations/discord?error=invalid_state");
     }
 
     const clientId = process.env.DISCORD_CLIENT_ID!;
     const clientSecret = process.env.DISCORD_CLIENT_SECRET!;
-    const redirectUri = process.env.DISCORD_REDIRECT_URI!;
-    if (!clientId || !clientSecret || !redirectUri) {
+    const redirectUri = process.env.DISCORD_REDIRECT_URI || `${await baseUrl()}/api/discord/oauth/callback`;
+    if (!clientId || !clientSecret) {
       return NextResponse.redirect("/settings/integrations/discord?error=server_config");
     }
 
@@ -63,21 +63,44 @@ export async function GET(req: Request) {
     const me = await meRes.json();
     const discordUserId = me?.id as string | undefined;
 
-    // Persist in Supabase keyed by app user
+    // Persist in Supabase keyed by app user (requires existing app session)
     const { getAppUserId } = await import("@/lib/app_user");
     const { upsertDiscordConnection } = await import("@/lib/discord_store");
+    const { setPendingDiscord } = await import("@/lib/discord_pending");
     const appUserId = await getAppUserId();
+
+    // Set Discord cookies for immediate UI access to /api/discord/me
+    const now = Math.floor(Date.now() / 1000);
+    const maxAge = Math.max(1, Math.min((expiresIn || 3600), 3600));
+    const exp = now + (expiresIn || 3600);
+    const secure = process.env.NODE_ENV === "production";
+    await cookieJar.set("dc_access", accessToken, { httpOnly: true, secure, sameSite: "lax", path: "/", maxAge });
+    if (refreshToken) await cookieJar.set("dc_refresh", refreshToken, { httpOnly: true, secure, sameSite: "lax", path: "/", maxAge: 60*60*24*30 });
+    await cookieJar.set("dc_expires", String(exp), { httpOnly: true, secure, sameSite: "lax", path: "/", maxAge: 60*60*24*30 });
+
     if (!appUserId) {
-      return NextResponse.redirect(`${await baseUrl()}/settings/integrations/discord?error=not_signed_in`);
+      // Store pending Discord connection to attach after user logs in
+      await setPendingDiscord({
+        discord_user_id: discordUserId,
+        access_token: accessToken,
+        refresh_token: refreshToken || null,
+        expires_in: expiresIn || 3600,
+        captured_at: Date.now(),
+      });
+      return NextResponse.redirect(`${await baseUrl()}/login?next=${encodeURIComponent("/settings/integrations/discord?pending=1")}`);
     }
     if (discordUserId) {
-      const access_expires_at = new Date((Date.now() + (expiresIn || 3600) * 1000)).toISOString();
-      await upsertDiscordConnection(appUserId, { discord_user_id: discordUserId, access_token: accessToken, refresh_token: refreshToken || null, access_expires_at });
+      try {
+        const access_expires_at = new Date((Date.now() + (expiresIn || 3600) * 1000)).toISOString();
+        await upsertDiscordConnection(appUserId, { discord_user_id: discordUserId, access_token: accessToken, refresh_token: refreshToken || null, access_expires_at });
+      } catch (e:any) {
+        return NextResponse.redirect(`${await baseUrl()}/settings/integrations/discord?error=db_upsert_failed&detail=${encodeURIComponent(e?.message || "")}`);
+      }
     }
 
     // Clean up PKCE cookies
-    await (await cookieJar).delete("dc_state");
-    await (await cookieJar).delete("dc_verifier");
+    await cookieJar.delete("dc_state");
+    await cookieJar.delete("dc_verifier");
 
     return NextResponse.redirect(`${await baseUrl()}/settings/integrations/discord?connected=1`);
   } catch (e: any) {
