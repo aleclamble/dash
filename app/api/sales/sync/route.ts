@@ -14,7 +14,12 @@ export async function POST(req: Request) {
   let starting_after: string | undefined = undefined;
   let total = 0;
   while (true) {
-    const page = await stripe.charges.list({ limit: 100, ...(starting_after ? { starting_after } : {}), ...(since ? { created: { gte: since } } : {}) });
+    const params: Stripe.ChargeListParams = {
+      limit: 100,
+      ...(starting_after ? { starting_after } : {}),
+      ...(since ? { created: { gte: since } } : {}),
+    };
+    const page: Stripe.ApiList<Stripe.Charge> = await stripe.charges.list(params);
     for (const charge of page.data) {
       // Get balance transaction to compute fees and net
       const btId = typeof charge.balance_transaction === 'string' ? charge.balance_transaction : charge.balance_transaction?.id;
