@@ -17,7 +17,11 @@ export async function upsertDiscordConnection(userId: string, row: {
   access_expires_at: string;
 }) {
   const admin = supabaseAdmin();
-  await admin.from("discord_connections").upsert({ user_id: userId, ...row, updated_at: new Date().toISOString() });
+  const { error } = await admin.from("discord_connections").upsert({ user_id: userId, ...row, updated_at: new Date().toISOString() });
+  if (error) {
+    console.error("discord_connections upsert error", error);
+    throw new Error(error.message || "upsert failed");
+  }
 }
 
 export async function upsertGuilds(userId: string, guilds: Array<{ id: string; name: string; icon?: string | null; owner?: boolean; permissions?: number }>) {

@@ -66,6 +66,7 @@ export async function GET(req: Request) {
     // Persist in Supabase keyed by app user (requires existing app session)
     const { getAppUserId } = await import("@/lib/app_user");
     const { upsertDiscordConnection } = await import("@/lib/discord_store");
+    const { setPendingDiscord } = await import("@/lib/discord_pending");
     const appUserId = await getAppUserId();
 
     // Set Discord cookies for immediate UI access to /api/discord/me
@@ -78,12 +79,23 @@ export async function GET(req: Request) {
     await cookieJar.set("dc_expires", String(exp), { httpOnly: true, secure, sameSite: "lax", path: "/", maxAge: 60*60*24*30 });
 
     if (!appUserId) {
-      // App session missing: UI will still be able to call /api/discord/me via cookies, but persistence will be skipped
-      return NextResponse.redirect(`${await baseUrl()}/settings/integrations/discord?error=not_signed_in`);
+      // Store pending Discord connection to attach after user logs in
+      await setPendingDiscord({
+        discord_user_id: discordUserId,
+        access_token: accessToken,
+        refresh_token: refreshToken || null,
+        expires_in: expiresIn || 3600,
+        captured_at: Date.now(),
+      });
+      return NextResponse.redirect(`${await baseUrl()}/login?next=${encodeURIComponent("/settings/integrations/discord?pending=1")}`);
     }
     if (discordUserId) {
-      const access_expires_at = new Date((Date.now() + (expiresIn || 3600) * 1000)).toISOString();
-      await upsertDiscordConnection(appUserId, { discord_user_id: discordUserId, access_token: accessToken, refresh_token: refreshToken || null, access_expires_at });
+      try {
+        const access_expires_at = new Date((Date.now() + (expiresIn || 3600) * 1000)).toISOString();
+        await upsertDiscordConnection(appUserId, { discord_user_id: discordUserId, access_token: accessToken, refresh_token: refreshToken || null, access_expires_at });
+      } catch (e:any) {
+        return NextResponse.redirect(`${await baseUrl()}/settings/integrations/discord?error=db_upsert_failed&detail=${encodeURIComponent(e?.message || "")}`);
+      }
     }
 
     // Clean up PKCE cookies
