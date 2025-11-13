@@ -33,5 +33,11 @@ export async function upsertGuilds(userId: string, guilds: Array<{ id: string; n
 
 export async function markGuildInstalled(userId: string, guildId: string) {
   const admin = supabaseAdmin();
-  await admin.from("discord_guilds").upsert({ user_id: userId, guild_id: guildId, bot_installed: true, installed_at: new Date().toISOString(), cached_at: new Date().toISOString() });
+  const { error } = await admin
+    .from("discord_guilds")
+    .upsert({ user_id: userId, guild_id: guildId, bot_installed: true, installed_at: new Date().toISOString(), cached_at: new Date().toISOString() });
+  if (error) {
+    console.error("markGuildInstalled upsert error", error);
+    throw new Error(error.message || "markGuildInstalled failed");
+  }
 }

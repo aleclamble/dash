@@ -46,14 +46,23 @@ Implemented:
 
 Remaining:
 - Add cached-only guilds endpoint (e.g., `GET /api/discord/guilds/cache`) and optional `POST /api/discord/guilds/refresh`.
-- Surface install state in the UI (badge) and wire a Manage action.
 - Set env vars for bot install redirect and permissions.
+- Implemented pending-connection fallback: if user isn’t signed in at callback, we store Discord tokens in dc_pending (httpOnly) and redirect to /login?next=...; after login, /api/discord/attach binds the connection to the user and clears the cookie. UI auto-triggers attach via ?pending=1.
+
+UI status:
+- Integrations page now shows an "Installed" badge for guilds with botInstalled, and refreshes after returning from bot install (?installed=1).
+- Manage button placeholder is present for installed guilds.
 
 Env vars:
 - `DISCORD_CLIENT_ID` (required)
 - `DISCORD_REDIRECT_URI` (user OAuth)
 - `DISCORD_BOT_REDIRECT_URI` (bot install callback), e.g., `http://localhost:3000/api/discord/bot/callback`
 - `DISCORD_BOT_PERMISSIONS` (integer bitmask), set to required permissions for your bot.
+
+Database migrations:
+- Created `supabase/migrations/20251113_add_discord_guilds_bot_installed.sql` to add `bot_installed` and `installed_at` to `discord_guilds`.
+ - Run using Supabase CLI: `supabase db push` (if configured) or apply directly in SQL editor.
+ - SQL contents are idempotent via `add column if not exists`; includes optional backfill to avoid nulls.
 
 ## Branch Strategy
 - New feature branch: `feature/guild-persistence` for work focused on guild persistence, cache policy, and related APIs/UI.
