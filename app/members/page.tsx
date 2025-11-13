@@ -1,0 +1,60 @@
+"use client";
+import * as React from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+export default function MembersPage() {
+  const [list, setList] = React.useState<any[]>([]);
+  const [name, setName] = React.useState("");
+
+  const load = async () => {
+    const res = await fetch("/api/team/members");
+    const json = await res.json();
+    if (Array.isArray(json)) setList(json);
+  };
+  React.useEffect(() => { load(); }, []);
+
+  const add = async () => {
+    if (!name) return alert("Name required");
+    const res = await fetch("/api/team/members", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name })});
+    if (!res.ok) {
+      const j = await res.json().catch(()=>({}));
+      return alert(j.error || "Failed to add member");
+    }
+    setName("");
+    load();
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto py-8 space-y-6">
+      <h1 className="text-2xl font-semibold">Members</h1>
+
+      <div className="rounded-md border p-4 grid gap-3 sm:grid-cols-3">
+        <div className="sm:col-span-2">
+          <Label>Name</Label>
+          <Input value={name} onChange={e=>setName(e.target.value)} placeholder="Jane Doe" />
+        </div>
+        <div className="sm:col-span-1 flex items-end">
+          <Button onClick={add}>Add</Button>
+        </div>
+      </div>
+
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {list.map((m)=> (
+            <TableRow key={m.id}>
+              <TableCell>{m.name}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
