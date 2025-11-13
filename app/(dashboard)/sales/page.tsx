@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { SyncButton } from "@/components/dashboard/SyncButton";
 import { SplitsDialog } from "@/components/sales/SplitsDialog";
 import { DateRangePicker } from "@/components/dashboard/DateRangePicker";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -132,7 +133,15 @@ export default async function SalesPage({ searchParams }: { searchParams?: Recor
           <div className="space-y-1">
             {pipelines.map((p: any) => (
               <div key={String(p.pipeline_id)} className="flex justify-between text-sm">
-                <div>{p.pipeline_name}</div>
+                <div className="relative z-10">
+                  <Link
+                    href={`/pipelines/${p.pipeline_id ?? 'unassigned'}${(from || to) ? `?${new URLSearchParams(Object.fromEntries(Object.entries({ from, to }).filter(([_,v])=> !!v)) as any)}` : ''}`}
+                    prefetch
+                    className="block underline underline-offset-2 decoration-dotted hover:decoration-solid py-1"
+                  >
+                    {p.pipeline_name}
+                  </Link>
+                </div>
                 <div>{fmt.format((p.total_amount || 0)/100)}</div>
               </div>
             ))}
