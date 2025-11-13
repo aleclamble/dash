@@ -74,34 +74,63 @@ export function DateRangePicker() {
 
   return (
     <div className="relative" data-range-root>
-      <Button variant="outline" onClick={() => setOpen(o=>!o)} aria-expanded={open} aria-haspopup>
+      <Button variant="outline" onClick={() => setOpen(o=>!o)} aria-expanded={open} aria-haspopup className="min-w-[10ch]">
         {label}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="ml-2 opacity-70"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
       </Button>
       {open && (
-        <div className="absolute right-0 mt-2 z-50 w-[340px] rounded-md border bg-background shadow">
-          <div className="p-3 border-b text-sm font-medium">Date range</div>
-          <div className="p-3 grid grid-cols-2 gap-3">
-            <div className="grid gap-1">
-              <label className="text-xs text-muted-foreground">From</label>
-              <Input type="date" value={from} onChange={(e)=> setFrom(e.target.value)} />
-            </div>
-            <div className="grid gap-1">
-              <label className="text-xs text-muted-foreground">To</label>
-              <Input type="date" value={to} onChange={(e)=> setTo(e.target.value)} />
-            </div>
-            <div className="col-span-2 flex justify-end gap-2 mt-2">
-              <Button variant="ghost" onClick={clearAll}>Clear</Button>
-              <Button onClick={apply}>Apply</Button>
+        <>
+          {/* Mobile: full-screen bottom sheet */}
+          <div className="fixed inset-0 z-50 bg-black/40 sm:hidden" />
+          <div className="fixed inset-x-0 bottom-0 z-50 sm:hidden">
+            <div className="rounded-t-xl border-t border-x bg-background shadow-2xl p-4">
+              <div className="pb-2 border-b text-sm font-medium">Date range</div>
+              <div className="pt-3 grid gap-3">
+                <div className="grid gap-1">
+                  <label className="text-xs text-muted-foreground">From</label>
+                  <Input type="date" value={from} onChange={(e)=> setFrom(e.target.value)} className="h-11" />
+                </div>
+                <div className="grid gap-1">
+                  <label className="text-xs text-muted-foreground">To</label>
+                  <Input type="date" value={to} onChange={(e)=> setTo(e.target.value)} className="h-11" />
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <Button variant="outline" onClick={thisMonth} className="w-full h-11">This month</Button>
+                  <Button variant="outline" onClick={lastMonth} className="w-full h-11">Last month</Button>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <Button variant="ghost" onClick={clearAll} className="w-full h-11">Clear</Button>
+                  <Button onClick={apply} className="w-full h-11">Apply</Button>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="p-2 border-t">
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" onClick={thisMonth}>This month</Button>
-              <Button variant="outline" onClick={lastMonth}>Last month</Button>
+
+          {/* Desktop: anchored popover */}
+          <div className="absolute right-0 mt-2 z-50 hidden sm:block w-[340px] rounded-md border bg-background shadow">
+            <div className="p-3 border-b text-sm font-medium">Date range</div>
+            <div className="p-3 grid grid-cols-2 gap-3">
+              <div className="grid gap-1">
+                <label className="text-xs text-muted-foreground">From</label>
+                <Input type="date" value={from} onChange={(e)=> setFrom(e.target.value)} />
+              </div>
+              <div className="grid gap-1">
+                <label className="text-xs text-muted-foreground">To</label>
+                <Input type="date" value={to} onChange={(e)=> setTo(e.target.value)} />
+              </div>
+              <div className="col-span-2 flex justify-end gap-2 mt-2">
+                <Button variant="ghost" onClick={clearAll}>Clear</Button>
+                <Button onClick={apply}>Apply</Button>
+              </div>
+            </div>
+            <div className="p-2 border-t">
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" onClick={thisMonth}>This month</Button>
+                <Button variant="outline" onClick={lastMonth}>Last month</Button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

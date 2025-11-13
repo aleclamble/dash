@@ -27,11 +27,11 @@ export function Header() {
   }, []);
 
   return (
-    <header className={cn("fixed top-4 inset-x-0 z-40")}>
+    <header className={cn("fixed top-4 left-4 right-4 sm:inset-x-0 z-40")}>
       <div
         className={cn(
           "mx-auto max-w-6xl w-full",
-          "h-12 px-4 flex items-center justify-between",
+          "h-12 px-6 flex items-center justify-between",
           "rounded-md border border-white/20",
           "bg-background/30 backdrop-blur supports-[backdrop-filter]:bg-background/30",
           "shadow-[0_0_20px_rgba(255,255,255,0.15)]"
