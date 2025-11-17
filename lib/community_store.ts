@@ -4,6 +4,7 @@ export type CommunitySettings = {
   user_id: string;
   slug: string;
   name: string;
+  description?: string | null;
   youtube_url?: string | null;
   feature1?: string | null;
   feature2?: string | null;

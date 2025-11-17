@@ -34,7 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <Suspense fallback={<div className="min-h-screen" /> }>
       <div className="min-h-screen">
         <Header />
-        <div className="pt-14 p-6">
+        <div className="pt-20 p-6">
           {children}
         </div>
       </div>

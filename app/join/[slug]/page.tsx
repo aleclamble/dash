@@ -42,7 +42,7 @@ export default async function JoinPage({ params, searchParams }: { params: { slu
         <div className="flex flex-col lg:flex-row gap-10 items-start">
           <div className="flex-1 space-y-5">
             <h1 className="text-4xl font-semibold tracking-tight">{cfg.name}</h1>
-            <p className="text-foreground/70">Private community access. Join to get exclusive content, support, and more.</p>
+            <p className="text-foreground/70">{cfg.description || 'Private community access. Join to get exclusive content, support, and more.'}</p>
             <ul className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[cfg.feature1, cfg.feature2, cfg.feature3].filter(Boolean).map((f: string, i: number) => (
                 <li key={i} className="rounded-md border p-3 text-sm">{f}</li>
