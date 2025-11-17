@@ -2,6 +2,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase";
 
 export default function DiscordIntegrationPage() {
   const [connected, setConnected] = React.useState(false);
@@ -31,7 +32,6 @@ export default function DiscordIntegrationPage() {
     const ensureServerSession = async () => {
       // Make sure server has sb-access-token before calling server routes
       try {
-        const { supabase } = await import('@/lib/supabase');
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           await fetch('/api/auth/set-session', {
