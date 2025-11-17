@@ -5,9 +5,14 @@ import { getDiscordConnection, upsertGuilds, upsertDiscordConnection } from "@/l
 const ADMIN = 0x00000008;
 const MANAGE_GUILD = 0x00000020;
 
-export async function GET() {
+export async function GET(req: Request) {
   const userId = await getAppUserId();
-  if (!userId) return NextResponse.json({ error: "not_authenticated", hint: "Server did not detect an app session cookie (sb-access-token). Try refreshing or signing in again." }, { status: 401 });
+  const url = new URL(req.url);
+  const debug = url.searchParams.get('debug') === '1';
+  if (!userId) {
+    const body = { error: "not_authenticated", hint: "Server did not detect an app session cookie (sb-access-token). Try refreshing or signing in again." };
+    return NextResponse.json(body, { status: 401 });
+  }
 
   // Check cache first (1 hour TTL)
   const { supabaseAdmin } = await import("@/lib/supabase");
@@ -18,18 +23,20 @@ export async function GET() {
     .select("guild_id id, name, icon, owner, permissions, bot_installed")
     .eq("user_id", userId)
     .gte("cached_at", oneHourAgo);
-  if (!cached.error && cached.data && cached.data.length) {
+  if (!cached.error && cached.data && cached.data.length && !debug) {
     return NextResponse.json(cached.data.map((g:any)=> ({...g, botInstalled: !!g.bot_installed})));
   }
 
   const conn = await getDiscordConnection(userId);
   let token = conn?.access_token || null;
+  let usedCookieFallback = false;
   if (!token) {
     // Fallback: try reading OAuth cookies (legacy connections may have no token stored)
     try {
       const { getDiscordAccessToken } = await import("@/lib/discord_session");
       token = await getDiscordAccessToken();
       if (token) {
+        usedCookieFallback = true;
         // Backfill connection with token by fetching discord user id
         const meRes = await fetch("https://discord.com/api/users/@me", { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
         if (meRes.ok) {
@@ -41,11 +48,14 @@ export async function GET() {
       }
     } catch {}
   }
-  if (!token) return NextResponse.json({ error: "Not connected (no token)" }, { status: 401 });
+  if (!token) {
+    const body = { error: "not_connected", hint: "No Discord token found in DB or cookies. Reconnect Discord.", userId, hasConn: !!conn };
+    return NextResponse.json(body, { status: 401 });
+  }
 
   // Refresh if expired
-  const exp = conn.access_expires_at ? new Date(conn.access_expires_at).getTime() : 0;
-  if (exp && Date.now() >= exp - 30_000 && conn.refresh_token) {
+  const exp = conn?.access_expires_at ? new Date(conn.access_expires_at).getTime() : 0;
+  if (exp && Date.now() >= exp - 30_000 && conn?.refresh_token) {
     const body = new URLSearchParams({
       client_id: process.env.DISCORD_CLIENT_ID!,
       client_secret: process.env.DISCORD_CLIENT_SECRET!,
@@ -58,12 +68,16 @@ export async function GET() {
       token = tj.access_token || token;
       // update connection with refreshed token
       await upsertDiscordConnection(userId, {
-        discord_user_id: conn.discord_user_id,
-        access_token: token,
-        refresh_token: tj.refresh_token || conn.refresh_token,
+        discord_user_id: conn!.discord_user_id,
+        access_token: token!,
+        refresh_token: tj.refresh_token || conn!.refresh_token,
         access_expires_at: new Date(Date.now() + (tj.expires_in || 3600) * 1000).toISOString(),
       });
     }
+  }
+
+  if (debug) {
+    return NextResponse.json({ userId, hasConn: !!conn, usedCookieFallback, hasToken: !!token, cachedCount: (cached.data || []).length });
   }
 
   const res = await fetch("https://discord.com/api/users/@me/guilds", {
