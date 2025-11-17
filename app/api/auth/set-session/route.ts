@@ -19,3 +19,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e?.message || "failed" }, { status: 500 });
   }
 }
+
+export async function DELETE() {
+  try {
+    const secure = process.env.NODE_ENV === "production";
+    const jar = await cookies();
+    await jar.set("sb-access-token", "", { httpOnly: true, secure, sameSite: "lax", path: "/", maxAge: 0 });
+    await jar.set("sb-refresh-token", "", { httpOnly: true, secure, sameSite: "lax", path: "/", maxAge: 0 });
+    return NextResponse.json({ ok: true });
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message || "failed" }, { status: 500 });
+  }
+}

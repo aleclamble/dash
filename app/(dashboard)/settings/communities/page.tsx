@@ -2,6 +2,16 @@ import Link from "next/link";
 import { getAppUserId } from "@/lib/app_user";
 import { getCommunitiesByUser } from "@/lib/community_store";
 import { Button } from "@/components/ui/button";
+import dynamic from "next/dynamic";
+
+const SessionSync = dynamic(() => import('@/components/session/SessionSync').then(m => m.SessionSync), { ssr: false });
+
+function SessionSyncShim() {
+  // Render client-only SessionSync to sync cookies and refresh
+  // Using a shim since this file is a server component
+  // @ts-expect-error Server/Client boundary
+  return <SessionSync />;
+}
 
 export default async function CommunitiesSettingsPage() {
   const userId = await getAppUserId();
@@ -14,6 +24,9 @@ export default async function CommunitiesSettingsPage() {
           You need to be signed in to view your communities.
         </div>
         <Link href="/login"><Button>Sign in</Button></Link>
+        {/* Attempt to sync client auth -> server cookies and refresh */}
+        {/* @ts-expect-error Async Server Component boundary */}
+        <SessionSyncShim />
       </div>
     );
   }
@@ -40,17 +53,4 @@ export default async function CommunitiesSettingsPage() {
                 ) : null}
               </div>
               <div className="flex items-center gap-2">
-                <Link href={`/join/${c.slug}`}>
-                  <Button variant="secondary">View public page</Button>
-                </Link>
-                <Link href="/community">
-                  <Button>Edit</Button>
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+      
