@@ -21,6 +21,13 @@ export async function getCommunityByUser(userId: string) {
   return data as CommunitySettings | null;
 }
 
+export async function getCommunitiesByUser(userId: string) {
+  const admin = supabaseAdmin();
+  const { data, error } = await admin.from('community_settings').select('*').eq('user_id', userId);
+  if (error) throw error;
+  return (data || []) as CommunitySettings[];
+}
+
 export async function getCommunityBySlug(slug: string) {
   const admin = supabaseAdmin();
   const { data, error } = await admin.from('community_settings').select('*').eq('slug', slug).maybeSingle();

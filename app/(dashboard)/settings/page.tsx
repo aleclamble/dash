@@ -55,6 +55,18 @@ export default function SettingsPage() {
           </div>
           <Link href="/settings/integrations/stripe"><Button>Connect</Button></Link>
         </div>
+
+        {/* Communities Card */}
+        <div className="rounded-md border p-4 flex items-center justify-between">
+          <div className="flex items-start gap-3">
+            <div className="w-6 h-6 rounded-sm bg-muted" />
+            <div>
+              <div className="font-medium">Communities</div>
+              <div className="text-sm text-muted-foreground">Manage your communities: view details and edit settings.</div>
+            </div>
+          </div>
+          <Link href="/settings/communities"><Button>Open</Button></Link>
+        </div>
       </div>
     </div>
   );
