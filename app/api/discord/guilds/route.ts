@@ -7,7 +7,7 @@ const MANAGE_GUILD = 0x00000020;
 
 export async function GET() {
   const userId = await getAppUserId();
-  if (!userId) return NextResponse.json({ error: "Not connected" }, { status: 401 });
+  if (!userId) return NextResponse.json({ error: "not_authenticated", hint: "Server did not detect an app session cookie (sb-access-token). Try refreshing or signing in again." }, { status: 401 });
 
   // Check cache first (1 hour TTL)
   const { supabaseAdmin } = await import("@/lib/supabase");
