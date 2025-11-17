@@ -23,8 +23,25 @@ export async function GET() {
   }
 
   const conn = await getDiscordConnection(userId);
-  if (!conn?.access_token) return NextResponse.json({ error: "Not connected" }, { status: 401 });
-  let token = conn.access_token;
+  let token = conn?.access_token || null;
+  if (!token) {
+    // Fallback: try reading OAuth cookies (legacy connections may have no token stored)
+    try {
+      const { getDiscordAccessToken } = await import("@/lib/discord_session");
+      token = await getDiscordAccessToken();
+      if (token) {
+        // Backfill connection with token by fetching discord user id
+        const meRes = await fetch("https://discord.com/api/users/@me", { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
+        if (meRes.ok) {
+          const me = await meRes.json();
+          const discord_user_id = String(me.id);
+          const access_expires_at = new Date(Date.now() + 3600 * 1000).toISOString();
+          await upsertDiscordConnection(userId, { discord_user_id, access_token: token, refresh_token: null, access_expires_at });
+        }
+      }
+    } catch {}
+  }
+  if (!token) return NextResponse.json({ error: "Not connected (no token)" }, { status: 401 });
 
   // Refresh if expired
   const exp = conn.access_expires_at ? new Date(conn.access_expires_at).getTime() : 0;
