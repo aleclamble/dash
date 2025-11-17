@@ -87,7 +87,7 @@ export async function GET(req: Request) {
         expires_in: expiresIn || 3600,
         captured_at: Date.now(),
       });
-      return NextResponse.redirect(`${await baseUrl()}/login?next=${encodeURIComponent("/settings/integrations/discord?pending=1")}`);
+      return NextResponse.redirect(`${await baseUrl()}/login?redirect=${encodeURIComponent("/settings/integrations/discord?pending=1")}`);
     }
     if (discordUserId) {
       try {
