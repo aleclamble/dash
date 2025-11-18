@@ -49,7 +49,7 @@ export default async function CommunitiesSettingsPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Link href={`/join/${c.slug}`}>
-                  <Button variant="secondary">View public page</Button>
+                  <Button variant="outline">View public page</Button>
                 </Link>
                 <Link href="/community">
                   <Button>Edit</Button>
