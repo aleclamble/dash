@@ -21,7 +21,6 @@ export default async function CommunitiesSettingsPage() {
         </div>
         <Link href="/login"><Button>Sign in</Button></Link>
         {/* Attempt to sync client auth -> server cookies and refresh */}
-        {/* @ts-expect-error Async Server Component boundary */}
         <SessionSyncShim />
       </div>
     );
