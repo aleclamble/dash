@@ -2,6 +2,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase";
 
 export default function DiscordIntegrationPage() {
   const [connected, setConnected] = React.useState(false);
@@ -27,10 +28,26 @@ export default function DiscordIntegrationPage() {
     }
 
     let cancelled = false;
+
+    const ensureServerSession = async () => {
+      // Make sure server has sb-access-token before calling server routes
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await fetch('/api/auth/set-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ access_token: session.access_token, refresh_token: session.refresh_token, expires_at: session.expires_at }),
+          }).catch(()=>{});
+        }
+      } catch {}
+    };
+
     const load = async () => {
       setLoading(true);
       setError(null);
       try {
+        await ensureServerSession();
         // Fetch profile first
         try {
           const pr = await fetch("/api/discord/me");
@@ -40,6 +57,11 @@ export default function DiscordIntegrationPage() {
           }
         } catch {}
         let r = await fetch("/api/discord/guilds");
+        if (r.status === 401) {
+          // retry once after forcing session sync
+          await ensureServerSession();
+          r = await fetch("/api/discord/guilds");
+        }
         if (r.status === 429) {
           const ra = Number(r.headers.get("Retry-After") || 2);
           await new Promise(res => setTimeout(res, Math.min(Math.max(ra, 1), 5) * 1000));
@@ -54,7 +76,7 @@ export default function DiscordIntegrationPage() {
         }
       } catch (e) {
         let msg = "Failed to load guilds";
-        try { const j = await (e as Response).json(); if (j?.error) msg = j.error; } catch {}
+        try { const j = await (e as Response).json(); if (j?.error) msg = j.error + (j?.hint ? `: ${j.hint}` : ''); } catch {}
         if (!cancelled) setError(msg);
       } finally {
         if (!cancelled) setLoading(false);
@@ -66,6 +88,7 @@ export default function DiscordIntegrationPage() {
       try {
         const url = new URL(window.location.href);
         if (url.searchParams.get("pending") === "1") {
+          await ensureServerSession();
           await fetch("/api/discord/attach", { method: "POST" });
           url.searchParams.delete("pending");
           window.history.replaceState({}, "", url.toString());

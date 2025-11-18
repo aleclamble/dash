@@ -34,6 +34,7 @@ function ProfileMenu({ onSignOut }: { onSignOut: () => Promise<void> }) {
 const nav = [
   { href: "/members", label: "Members" },
   { href: "/pipelines", label: "Pipelines" },
+  { href: "/community", label: "Community" },
   { href: "/settings", label: "Settings" },
 ];
 
@@ -75,6 +76,7 @@ export function Header() {
           <nav className="flex items-center gap-6 text-sm">
             <Link href="/members" className="text-foreground/80 hover:text-foreground transition-colors">Members</Link>
             <Link href="/pipelines" className="text-foreground/80 hover:text-foreground transition-colors">Pipelines</Link>
+            <Link href="/community" className="text-foreground/80 hover:text-foreground transition-colors">Community</Link>
           </nav>
         </div>
         {/* Right-side profile menu */}
