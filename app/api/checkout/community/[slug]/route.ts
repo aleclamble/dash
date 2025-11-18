@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import Stripe from 'stripe';
 
-export async function POST(_req: Request, { params }: { params: { slug: string } }) {
-  const slug = params.slug;
+export async function POST(_req: NextRequest, ctx: { params: Promise<{ slug: string }> }) {
+  const { slug } = await ctx.params;
   const { getCommunityBySlug } = await import('@/lib/community_store');
   const cfg = await getCommunityBySlug(slug);
   if (!cfg) return NextResponse.json({ error: 'Not found' }, { status: 404 });
